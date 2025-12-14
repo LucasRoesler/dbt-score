@@ -53,6 +53,43 @@ $ dbt-score lint --format json
 }
 ```
 
+## Custom formatters
+
+For advanced use cases, you can create and use custom formatters. Specify a
+custom formatter using a Python import path:
+
+```shell
+dbt-score lint --format mypackage.formatters:MyCustomFormatter
+```
+
+Both `:` and `.` separators are supported:
+
+- `mypackage.formatters:MyCustomFormatter`
+- `mypackage.formatters.MyCustomFormatter`
+
+### Creating a custom formatter
+
+Custom formatters must subclass `dbt_score.formatters.Formatter`:
+
+```python
+from dbt_score.formatters import Formatter
+from dbt_score.models import Evaluable
+from dbt_score.scoring import Score
+
+
+class MyCustomFormatter(Formatter):
+    def evaluable_evaluated(self, evaluable: Evaluable, results, score: Score) -> None:
+        # Called after each model/source/etc is evaluated
+        print(f"{evaluable.name}: {score.value:.1f}")
+
+    def project_evaluated(self, score: Score) -> None:
+        # Called after the entire project is evaluated
+        print(f"Project score: {score.value:.1f}")
+```
+
+See the [Formatter reference](reference/formatters/index.md) for all available
+methods to override.
+
 ## Exit codes
 
 When `dbt-score` terminates, it exists with one of the following exit codes:
