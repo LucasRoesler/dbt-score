@@ -9,6 +9,7 @@ and this project adheres to
 ## [Unreleased]
 
 - Expose column config field from the manifest.
+- Support custom output formatters via Python import path.
 
 ## [0.15.0] - 2025-11-19
 
