@@ -77,12 +77,27 @@ def test_formatter_registry_skips_imported_formatters(default_config):
     registry = FormatterRegistry(default_config)
     registry._load("tests.formatters")
 
-    # The formatter should only be registered once under its original module
+    # The formatter is registered twice: by full name and by class name
     formatter_names = list(registry.formatters.keys())
     custom_formatter_count = sum(
         1 for name in formatter_names if "CustomTestFormatter" in name
     )
-    assert custom_formatter_count == 1
+    assert custom_formatter_count == 2  # full name + short name
+
+
+def test_formatter_registry_short_name_lookup(default_config):
+    """Test that formatters can be looked up by class name."""
+    from tests.formatters.custom_formatter import CustomTestFormatter
+
+    registry = FormatterRegistry(default_config)
+    registry._load("tests.formatters")
+
+    # Should be able to get formatter by short name (class name)
+    assert registry.get("CustomTestFormatter") is CustomTestFormatter
+
+    # And also by full name
+    full_name = "tests.formatters.custom_formatter.CustomTestFormatter"
+    assert registry.get(full_name) is CustomTestFormatter
 
 
 def test_formatter_registry_searches_rule_namespaces():

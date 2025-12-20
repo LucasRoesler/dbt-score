@@ -80,9 +80,19 @@ class FormatterRegistry:
 
     def _add_formatter(self, formatter_class: type[Formatter]) -> None:
         """Add a formatter to the registry."""
-        # Register by fully qualified name (like rules)
+        # Register by fully qualified name
         full_name = f"{formatter_class.__module__}.{formatter_class.__name__}"
         self._formatters[full_name] = formatter_class
+
+        # Also register by class name (short name) for convenience
+        short_name = formatter_class.__name__
+        if short_name not in self._formatters:
+            self._formatters[short_name] = formatter_class
+        else:
+            logger.warning(
+                f"Formatter '{short_name}' already registered, "
+                f"use full path: {full_name}"
+            )
 
     def load_all(self) -> None:
         """Load all formatters, built-in and custom."""

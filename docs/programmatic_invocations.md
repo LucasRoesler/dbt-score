@@ -100,10 +100,17 @@ class MyCustomFormatter(Formatter):
 
 ### Using a custom formatter
 
-Specify the formatter using its fully qualified name:
+Specify the formatter using its class name:
 
 ```shell
-dbt-score lint --format mypackage.formatters.custom.MyCustomFormatter
+dbt-score lint --format MyCustomFormatter
+```
+
+The full path also works if needed (e.g., to disambiguate between formatters
+with the same class name):
+
+```shell
+dbt-score lint --format mypackage.formatters.MyCustomFormatter
 ```
 
 See the [Formatter reference](reference/formatters/index.md) for all available
