@@ -2,10 +2,7 @@
 
 from unittest.mock import patch
 
-import click
 import pytest
-
-from dbt_score.cli import FORMAT_TYPE
 from dbt_score.config import Config
 from dbt_score.formatters.json_formatter import JSONFormatter
 from dbt_score.lint import lint_dbt_project
@@ -38,83 +35,41 @@ def test_lint_dbt_project_custom_formatter_class(mock_evaluation, manifest_path)
 
 
 @patch("dbt_score.lint.Evaluation")
-def test_lint_dbt_project_import_colon(mock_evaluation, manifest_path):
-    """Test linting with a custom formatter using colon separator."""
+def test_lint_dbt_project_formatter_by_qualified_name(mock_evaluation, manifest_path):
+    """Test linting with a custom formatter using fully qualified name."""
+    config = Config()
+    config.formatter_namespaces = ["tests.formatters"]
+
     mock_evaluation.return_value = mock_evaluation
 
     lint_dbt_project(
         manifest_path=manifest_path,
-        config=Config(),
-        format="dbt_score.formatters.json_formatter:JSONFormatter",
+        config=config,
+        format="tests.formatters.custom_formatter.CustomTestFormatter",
     )
 
     mock_evaluation.evaluate.assert_called_once()
 
 
-@patch("dbt_score.lint.Evaluation")
-def test_lint_dbt_project_import_dot(mock_evaluation, manifest_path):
-    """Test linting with a custom formatter using dot separator."""
-    mock_evaluation.return_value = mock_evaluation
-
-    lint_dbt_project(
-        manifest_path=manifest_path,
-        config=Config(),
-        format="dbt_score.formatters.json_formatter.JSONFormatter",
-    )
-
-    mock_evaluation.evaluate.assert_called_once()
-
-
-def test_lint_dbt_project_import_module_not_found(manifest_path):
-    """Test that importing from a non-existent module raises ModuleNotFoundError."""
-    with pytest.raises(ModuleNotFoundError):
+def test_lint_dbt_project_unknown_formatter(manifest_path):
+    """Test that using an unknown formatter raises ValueError."""
+    with pytest.raises(ValueError, match="Unknown formatter"):
         lint_dbt_project(
             manifest_path=manifest_path,
             config=Config(),
-            format="non_existent_module:SomeClass",
+            format="nonexistent_formatter",
         )
 
 
-def test_lint_dbt_project_import_class_not_found(manifest_path):
-    """Test that importing a non-existent class raises AttributeError."""
-    with pytest.raises(AttributeError):
+def test_lint_dbt_project_formatter_not_in_namespace(manifest_path):
+    """Test that a formatter not in configured namespaces raises ValueError."""
+    config = Config()
+    # Don't add the tests.formatters namespace
+    config.formatter_namespaces = []
+
+    with pytest.raises(ValueError, match="Unknown formatter"):
         lint_dbt_project(
             manifest_path=manifest_path,
-            config=Config(),
-            format="dbt_score.formatters.json_formatter:NonExistentClass",
+            config=config,
+            format="tests.formatters.custom_formatter.CustomTestFormatter",
         )
-
-
-def test_lint_dbt_project_import_not_formatter(manifest_path):
-    """Test that importing a non-Formatter class raises TypeError."""
-    with pytest.raises(TypeError, match="is not a Formatter subclass"):
-        lint_dbt_project(
-            manifest_path=manifest_path,
-            config=Config(),
-            format="dbt_score.config:Config",
-        )
-
-
-# Tests for FormatParamType (CLI boundary)
-
-
-def test_format_param_type_builtin():
-    """Test that built-in format names return as strings."""
-    assert FORMAT_TYPE.convert("plain", None, None) == "plain"
-    assert FORMAT_TYPE.convert("json", None, None) == "json"
-    assert FORMAT_TYPE.convert("manifest", None, None) == "manifest"
-    assert FORMAT_TYPE.convert("ascii", None, None) == "ascii"
-
-
-def test_format_param_type_custom_import():
-    """Test that custom import paths return the formatter class."""
-    result = FORMAT_TYPE.convert(
-        "dbt_score.formatters.json_formatter:JSONFormatter", None, None
-    )
-    assert result is JSONFormatter
-
-
-def test_format_param_type_invalid_import():
-    """Test that invalid import paths raise BadParameter."""
-    with pytest.raises(click.exceptions.BadParameter):
-        FORMAT_TYPE.convert("non_existent_module:SomeClass", None, None)

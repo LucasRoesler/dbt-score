@@ -53,6 +53,7 @@ class Config:
     _main_section: Final[str] = "tool.dbt-score"
     _options: Final[list[str]] = [
         "rule_namespaces",
+        "formatter_namespaces",
         "disabled_rules",
         "inject_cwd_in_python_path",
         "fail_project_under",
@@ -66,6 +67,7 @@ class Config:
     def __init__(self) -> None:
         """Initialize the Config object."""
         self.rule_namespaces: list[str] = ["dbt_score.rules", "dbt_score_rules"]
+        self.formatter_namespaces: list[str] = ["dbt_score_formatters"]
         self.disabled_rules: list[str] = []
         self.inject_cwd_in_python_path = True
         self.rules_config: dict[str, RuleConfig] = {}

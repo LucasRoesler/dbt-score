@@ -55,23 +55,34 @@ $ dbt-score lint --format json
 
 ## Custom formatters
 
-For advanced use cases, you can create and use custom formatters. Specify a
-custom formatter using a Python import path:
+For advanced use cases, you can create and use custom formatters. This works
+similarly to how custom rules are discovered: formatters are loaded from
+configured namespaces.
 
-```shell
-dbt-score lint --format mypackage.formatters:MyCustomFormatter
+### Configuration
+
+Formatters are discovered in both `rule_namespaces` and `formatter_namespaces`.
+This means if you already have custom rules, you can place formatters in the same
+package without additional configuration.
+
+```toml
+[tool.dbt-score]
+# Formatters will be discovered here too
+rule_namespaces = ["mypackage"]
+
+# Optional: additional formatter-only namespaces
+formatter_namespaces = ["dbt_score_formatters"]
 ```
 
-Both `:` and `.` separators are supported:
-
-- `mypackage.formatters:MyCustomFormatter`
-- `mypackage.formatters.MyCustomFormatter`
+By default, `dbt-score` looks for formatters in `dbt_score_formatters` and the
+default rule namespaces (`dbt_score.rules`, `dbt_score_rules`).
 
 ### Creating a custom formatter
 
 Custom formatters must subclass `dbt_score.formatters.Formatter`:
 
 ```python
+# mypackage/formatters/custom.py
 from dbt_score.formatters import Formatter
 from dbt_score.models import Evaluable
 from dbt_score.scoring import Score
@@ -85,6 +96,14 @@ class MyCustomFormatter(Formatter):
     def project_evaluated(self, score: Score) -> None:
         # Called after the entire project is evaluated
         print(f"Project score: {score.value:.1f}")
+```
+
+### Using a custom formatter
+
+Specify the formatter using its fully qualified name:
+
+```shell
+dbt-score lint --format mypackage.formatters.custom.MyCustomFormatter
 ```
 
 See the [Formatter reference](reference/formatters/index.md) for all available

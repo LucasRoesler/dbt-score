@@ -3,7 +3,7 @@
 import logging
 import traceback
 from pathlib import Path
-from typing import Any, Final, Literal
+from typing import Final, Literal
 
 import click
 from click.core import ParameterSource
@@ -14,34 +14,8 @@ from dbt_score.dbt_utils import (
     dbt_parse,
     get_default_manifest_path,
 )
-from dbt_score.formatters import Formatter
-from dbt_score.lint import (
-    BUILTIN_FORMATTERS,
-    BuiltinFormat,
-    _import_formatter_class,
-    lint_dbt_project,
-)
+from dbt_score.lint import lint_dbt_project
 from dbt_score.rule_catalog import display_catalog
-
-
-class FormatParamType(click.ParamType):
-    """Click parameter type for output format."""
-
-    name = "format"
-
-    def convert(
-        self, value: Any, param: click.Parameter | None, ctx: click.Context | None
-    ) -> Any:
-        """Convert and validate the format parameter."""
-        if value in BUILTIN_FORMATTERS:
-            return value
-        try:
-            return _import_formatter_class(value)
-        except (ModuleNotFoundError, AttributeError, TypeError, ValueError) as e:
-            self.fail(str(e), param, ctx)
-
-
-FORMAT_TYPE = FormatParamType()
 
 logger = logging.getLogger(__name__)
 
@@ -68,9 +42,8 @@ def cli() -> None:
 @click.option(
     "--format",
     "-f",
-    type=FORMAT_TYPE,
     help="Output format. Built-in: plain, manifest, ascii, json. "
-    "Or a custom formatter: package.module:ClassName",
+    "Or a custom formatter by fully qualified name.",
     default="plain",
 )
 @click.option(
@@ -143,7 +116,7 @@ def cli() -> None:
 @click.pass_context
 def lint(  # noqa: PLR0912, PLR0913, C901
     ctx: click.Context,
-    format: BuiltinFormat | type[Formatter],
+    format: str,
     select: tuple[str],
     namespace: list[str],
     disabled_rule: list[str],
@@ -192,6 +165,10 @@ def lint(  # noqa: PLR0912, PLR0913, C901
         ctx.exit(2)
 
     except DbtParseException as exc:
+        logger.error(exc)
+        ctx.exit(2)
+
+    except ValueError as exc:
         logger.error(exc)
         ctx.exit(2)
 
