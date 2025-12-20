@@ -14,6 +14,7 @@ from dbt_score.dbt_utils import (
     dbt_parse,
     get_default_manifest_path,
 )
+from dbt_score.formatter_registry import FormatterRegistry
 from dbt_score.lint import lint_dbt_project
 from dbt_score.rule_catalog import display_catalog
 
@@ -150,11 +151,23 @@ def lint(  # noqa: PLR0912, PLR0913, C901
     if debug:
         config.overload({"debug": debug})
 
+    # Validate formatter early
+    formatter_registry = FormatterRegistry(config)
+    formatter_registry.load_all()
+    formatter_class = formatter_registry.get(format)
+    if formatter_class is None:
+        raise click.BadParameter(
+            f"Unknown formatter: {format}", param_hint="'--format' / '-f'"
+        )
+
     try:
         if run_dbt_parse:
             dbt_parse()
         evaluation = lint_dbt_project(
-            manifest_path=manifest, config=config, format=format, select=select
+            manifest_path=manifest,
+            config=config,
+            format=formatter_class,
+            select=select,
         )
 
     except FileNotFoundError:
@@ -165,10 +178,6 @@ def lint(  # noqa: PLR0912, PLR0913, C901
         ctx.exit(2)
 
     except DbtParseException as exc:
-        logger.error(exc)
-        ctx.exit(2)
-
-    except ValueError as exc:
         logger.error(exc)
         ctx.exit(2)
 

@@ -25,12 +25,11 @@ def lint_dbt_project(
     rule_registry = RuleRegistry(config)
     rule_registry.load_all()
 
-    formatter_registry = FormatterRegistry(config)
-    formatter_registry.load_all()
-
     manifest_loader = ManifestLoader(manifest_path, select=select)
 
     if isinstance(format, str):
+        formatter_registry = FormatterRegistry(config)
+        formatter_registry.load_all()
         formatter_class = formatter_registry.get(format)
         if formatter_class is None:
             raise ValueError(f"Unknown formatter: {format}")

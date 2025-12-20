@@ -90,7 +90,7 @@ def test_lint_other_exception(manifest_path, caplog):
             lint, ["--manifest", manifest_path], catch_exceptions=False
         )
     assert result.exit_code == 2
-    assert caplog.text.startswith("ERROR")
+    assert "some error" in caplog.text
 
 
 def test_fail_project_under(manifest_path):
